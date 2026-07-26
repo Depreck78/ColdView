@@ -115,8 +115,8 @@ def _compose_brief(watchlist: list[str], news: list[dict[str, Any]]) -> tuple[st
             "risk and today's catalysts before the bell.",
             "heuristic",
         )
-    pos = sum(1 for n in news if n["sentiment"] == "positive")
-    neg = sum(1 for n in news if n["sentiment"] == "negative")
+    pos = sum(1 for n in news if n.get("sentiment") == "positive")
+    neg = sum(1 for n in news if n.get("sentiment") == "negative")
     tone = "constructive" if pos > neg else "cautious" if neg > pos else "mixed"
     symbols_with_news = sorted({n["symbol"] for n in news})
     lead = ", ".join(symbols_with_news[:5])
@@ -128,6 +128,42 @@ def _compose_brief(watchlist: list[str], news: list[dict[str, Any]]) -> tuple[st
         "context, not a recommendation.",
         "heuristic",
     )
+
+
+async def _market_summary(watchlist: list[str], news: list[dict[str, str]]) -> tuple[str, str]:
+    """Write a concise AI market summary from headlines; fall back to heuristic.
+
+    Returns ``(text, source)`` where source is "ai" or "heuristic".
+    """
+    if not news:
+        return _compose_brief(watchlist, news)[0], "heuristic"
+
+    try:
+        from fastapi.concurrency import run_in_threadpool
+        from src.providers.llm import build_llm
+        llm = build_llm()
+    except Exception as exc:  # LLM not configured
+        logger.debug("morning summary: LLM unavailable: %s", exc)
+        return _compose_brief(watchlist, news)[0], "heuristic"
+
+    headlines = "\n".join(
+        f"- [{n['symbol']}] {n['title']}" + (f" — {n['snippet']}" if n.get("snippet") else "")
+        for n in news[:24]
+    )
+    prompt = (
+        "You are a market analyst writing a concise pre-market brief for a trader. "
+        "Using ONLY the headlines below, summarize the key market themes and notable moves in a "
+        "few tight sentences or short bullets — key points only, no filler, no preamble. Then add a "
+        "final line starting with 'Watch:' flagging 1-3 concrete opportunities or risks to watch "
+        "today. Keep it brief. Do not give financial advice.\n\nHeadlines:\n" + headlines
+    )
+    try:
+        resp = await run_in_threadpool(llm.invoke, prompt)
+        text = (getattr(resp, "content", None) or str(resp)).strip()
+        return (text, "ai") if text else (_compose_brief(watchlist, news)[0], "heuristic")
+    except Exception as exc:
+        logger.warning("morning summary LLM failed: %s", exc)
+        return _compose_brief(watchlist, news)[0], "heuristic"
 
 
 def register_morning_routes(app: FastAPI) -> None:
@@ -182,3 +218,26 @@ def register_morning_routes(app: FastAPI) -> None:
             "news": news,
             "isSample": False,
         }
+
+    @app.get("/morning/summary", dependencies=[Depends(require_auth)])
+    async def morning_summary(
+        symbols: str | None = Query(default=None),
+        per_symbol: int = Query(default=4, ge=1, le=8),
+    ) -> dict[str, Any]:
+        """AI market summary (news-driven) + optional portfolio summary.
+
+        The market section is written by the configured LLM from the headlines;
+        it falls back to the heuristic brief if the model is unavailable. The
+        portfolio section is null until a broker/positions source is wired, so
+        the client hides it.
+        """
+        watchlist = _parse_symbols(symbols)
+        news: list[dict[str, str]] = []
+        for sym in watchlist:
+            for art in _fetch_symbol_news(sym, per_symbol):
+                title = str(art.get("title") or "").strip()
+                if title:
+                    news.append({"symbol": sym, "title": title, "snippet": str(art.get("snippet") or "").strip()})
+
+        market, source = await _market_summary(watchlist, news)
+        return {"market": market, "portfolio": None, "source": source}

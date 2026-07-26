@@ -219,6 +219,10 @@ register_onboarding_routes(app)
 from src.api.ai_routes import register_ai_routes  # noqa: E402
 register_ai_routes(app)
 
+# --- Trade journal (store trades + AI reflections) ---
+from src.api.journal_routes import register_journal_routes  # noqa: E402
+register_journal_routes(app)
+
 # --- Settings ---
 from src.api.settings_routes import register_settings_routes  # noqa: E402
 register_settings_routes(app)

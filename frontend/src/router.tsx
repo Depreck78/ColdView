@@ -6,6 +6,7 @@ import { SettingsLayout } from "@/components/layout/SettingsLayout";
 const Home = lazy(() => import("@/pages/Home").then((m) => ({ default: m.Home })));
 const Onboarding = lazy(() => import("@/pages/Onboarding").then((m) => ({ default: m.Onboarding })));
 const Morning = lazy(() => import("@/pages/Morning").then((m) => ({ default: m.Morning })));
+const Journal = lazy(() => import("@/pages/Journal").then((m) => ({ default: m.Journal })));
 const Agent = lazy(() => import("@/pages/Agent").then((m) => ({ default: m.Agent })));
 const RunDetail = lazy(() =>
   import("@/pages/RunDetail").then((m) => ({ default: m.RunDetail })),
@@ -18,6 +19,9 @@ const ProfileSettings = lazy(() =>
 );
 const AiSettings = lazy(() =>
   import("@/pages/settings/AiSettings").then((m) => ({ default: m.AiSettings })),
+);
+const BrokersSettings = lazy(() =>
+  import("@/pages/settings/BrokersSettings").then((m) => ({ default: m.BrokersSettings })),
 );
 const DataSettings = lazy(() =>
   import("@/pages/settings/DataSettings").then((m) => ({ default: m.DataSettings })),
@@ -64,6 +68,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: wrap(Home) },
       { path: "/morning", element: wrap(Morning) },
+      { path: "/journal", element: wrap(Journal) },
       { path: "/agent", element: wrap(Agent) },
       { path: "/runtime", element: wrap(Runtime) },
       { path: "/reports", element: wrap(Reports) },
@@ -82,6 +87,7 @@ export const router = createBrowserRouter([
       { path: "/settings", element: <Navigate to="/settings/profile" replace /> },
       { path: "/settings/profile", element: wrap(ProfileSettings) },
       { path: "/settings/ai", element: wrap(AiSettings) },
+      { path: "/settings/brokers", element: wrap(BrokersSettings) },
       { path: "/settings/data", element: wrap(DataSettings) },
       { path: "/settings/connections", element: wrap(ConnectionsSettings) },
       { path: "/settings/api-access", element: wrap(ApiAccessSettings) },

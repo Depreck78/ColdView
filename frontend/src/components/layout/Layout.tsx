@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Activity, BarChart3, Bot, FileText, Plus, Trash2, Pencil, MessageSquare, ChevronsLeft, ChevronsRight, Settings, Layers, Loader2, Sunrise } from "lucide-react";
+import { Activity, BarChart3, FileText, Plus, Trash2, Pencil, MessageSquare, ChevronsLeft, ChevronsRight, Settings, Layers, Loader2, Sunrise, NotebookPen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/common/Logo";
 import { api, type SessionItem } from "@/lib/api";
@@ -16,8 +16,8 @@ export function Layout() {
 
   const NAV = [
     { to: "/", icon: BarChart3, label: t('layout.home') },
-    { to: "/morning", icon: Sunrise, label: t('layout.morning', 'Morning') },
-    { to: "/agent", icon: Bot, label: t('layout.agent') },
+    { to: "/morning", icon: Sunrise, label: t('layout.morning', 'Daily Brief') },
+    { to: "/journal", icon: NotebookPen, label: t('layout.journal', 'Journal') },
     { to: "/runtime", icon: Activity, label: t('layout.runtime') },
     { to: "/reports", icon: FileText, label: t('layout.reports') },
     { to: "/alpha-zoo", icon: Layers, label: t('layout.alphaZoo') },

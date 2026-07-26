@@ -33,6 +33,28 @@ class AlpacaConnectRequest(BaseModel):
 def register_onboarding_routes(app: FastAPI) -> None:
     """Mount onboarding helper routes onto ``app``."""
 
+    @app.get("/onboarding/broker/alpaca", dependencies=[Depends(require_auth)])
+    async def alpaca_status() -> dict[str, Any]:
+        """Report the saved Alpaca connection status (from ~/.coldview/alpaca.json)."""
+        try:
+            from src.trading.connectors.alpaca import sdk as alpaca
+        except Exception as exc:  # pragma: no cover - import guard
+            return {"configured": False, "ok": False, "error": f"Alpaca connector unavailable: {exc}"}
+        try:
+            report = alpaca.check_status()  # no arg → loads the saved config
+        except Exception as exc:
+            return {"configured": False, "ok": False, "error": str(exc)}
+        err = str(report.get("error") or "").lower()
+        ok = report.get("status") == "ok"
+        configured = ok or not ("not configured" in err or "missing" in err)
+        return {
+            "configured": configured,
+            "ok": ok,
+            "report": report,
+            "error": report.get("error"),
+            "account": report.get("account"),
+        }
+
     @app.post("/onboarding/broker/alpaca", dependencies=[Depends(require_auth)])
     async def connect_alpaca(body: AlpacaConnectRequest) -> dict[str, Any]:
         try:

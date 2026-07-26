@@ -1,8 +1,9 @@
 import { authHeaders, withAuthTicket } from "@/lib/apiAuth";
-import type { MorningBrief } from "@/types/morning";
+import type { MorningBrief, MorningSummary } from "@/types/morning";
 import type { OllamaStatus, OllamaInstallStatus, OllamaInstallStart } from "@/types/ollama";
-import type { AlpacaConnectRequest, AlpacaConnectResult } from "@/types/onboarding";
+import type { AlpacaConnectRequest, AlpacaConnectResult, AlpacaStatus } from "@/types/onboarding";
 import type { ProviderModelsResult } from "@/types/ai";
+import type { JournalList, Trade, TradeInput } from "@/types/journal";
 
 const BASE = "";
 
@@ -273,19 +274,30 @@ export const api = {
     const q = symbols?.length ? `?symbols=${encodeURIComponent(symbols.join(","))}` : "";
     return request<MorningBrief>(`/morning${q}`);
   },
+  getMorningSummary: (symbols?: string[]) => {
+    const q = symbols?.length ? `?symbols=${encodeURIComponent(symbols.join(","))}` : "";
+    return request<MorningSummary>(`/morning/summary${q}`);
+  },
 
   // Local Ollama runtime: status/preflight + one-click install.
   getOllamaStatus: () => request<OllamaStatus>("/ollama/status"),
   startOllamaInstall: () => request<OllamaInstallStart>("/ollama/install", { method: "POST" }),
   getOllamaInstallStatus: () => request<OllamaInstallStatus>("/ollama/install/status"),
 
-  // Onboarding: connect a broker (Alpaca) — saves creds + tests the connection.
+  // Broker (Alpaca): read saved connection status; connect saves creds + tests.
+  getAlpacaStatus: () => request<AlpacaStatus>("/onboarding/broker/alpaca"),
   connectAlpaca: (body: AlpacaConnectRequest) =>
     request<AlpacaConnectResult>("/onboarding/broker/alpaca", { method: "POST", body: JSON.stringify(body) }),
 
   // List a cloud provider's available models using the given/saved API key.
   listAiModels: (body: { provider: string; api_key?: string; base_url?: string }) =>
     request<ProviderModelsResult>("/ai/models", { method: "POST", body: JSON.stringify(body) }),
+
+  // Trade journal: CRUD + AI reflection per trade.
+  listTrades: () => request<JournalList>("/journal"),
+  saveTrade: (trade: TradeInput) => request<Trade>("/journal", { method: "POST", body: JSON.stringify(trade) }),
+  deleteTrade: (id: string) => request<{ deleted: string }>(`/journal/${id}`, { method: "DELETE" }),
+  reflectTrade: (id: string) => request<Trade>(`/journal/${id}/reflect`, { method: "POST" }),
 };
 
 // --- Swarm types ---

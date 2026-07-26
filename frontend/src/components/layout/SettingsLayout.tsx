@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { ArrowLeft, UserCircle2, Bot, Database, MessageSquareMore, KeyRound } from "lucide-react";
+import { ArrowLeft, UserCircle2, Bot, Building2, Database, MessageSquareMore, KeyRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/common/Logo";
 
@@ -7,6 +7,7 @@ import { LogoMark } from "@/components/common/Logo";
 const SETTINGS_SECTIONS = [
   { to: "/settings/profile", label: "Profile", icon: UserCircle2 },
   { to: "/settings/ai", label: "AI Settings", icon: Bot },
+  { to: "/settings/brokers", label: "Brokers", icon: Building2 },
   { to: "/settings/data", label: "Data sources", icon: Database },
   { to: "/settings/connections", label: "Connections", icon: MessageSquareMore },
   { to: "/settings/api-access", label: "API access", icon: KeyRound },

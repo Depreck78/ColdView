@@ -5,8 +5,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-import { buildSampleMorning, greetingFor } from "@/lib/morningSample";
-import type { MorningBrief, MorningMover, MorningNewsItem, Sentiment } from "@/types/morning";
+import { buildSampleMorning } from "@/lib/morningSample";
+import type { MorningBrief, MorningMover, MorningNewsItem, MorningSummary, Sentiment } from "@/types/morning";
 
 const WATCHLIST_KEY = "cv-watchlist";
 const DEFAULT_WATCHLIST = ["AAPL.US", "MSFT.US", "NVDA.US", "TSLA.US", "00700.HK"];
@@ -46,6 +46,9 @@ export function Morning() {
   const [loading, setLoading] = useState(true);
   const [addValue, setAddValue] = useState("");
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
+  const [summary, setSummary] = useState<MorningSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [showAllNews, setShowAllNews] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(WATCHLIST_KEY, JSON.stringify(watchlist));
@@ -54,8 +57,7 @@ export function Morning() {
   const load = useCallback(async (list: string[]) => {
     setLoading(true);
     try {
-      const res = await api.getMorningBrief(list);
-      setData(res);
+      setData(await api.getMorningBrief(list));
     } catch {
       // Offline / backend down → graceful sample fallback (Silk_Road-style).
       setData(buildSampleMorning(list));
@@ -64,7 +66,21 @@ export function Morning() {
     }
   }, []);
 
-  useEffect(() => { load(watchlist); }, [load, watchlist]);
+  const loadSummary = useCallback(async (list: string[]) => {
+    setSummaryLoading(true);
+    setSummary(null);
+    try {
+      setSummary(await api.getMorningSummary(list));
+    } catch {
+      setSummary(null); // render falls back to the heuristic/sample brief
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, []);
+
+  const refresh = useCallback((list: string[]) => { load(list); loadSummary(list); }, [load, loadSummary]);
+
+  useEffect(() => { refresh(watchlist); }, [refresh, watchlist]);
 
   const addSymbol = () => {
     const sym = addValue.trim().toUpperCase();
@@ -82,7 +98,6 @@ export function Morning() {
     return activeSymbol ? all.filter((n) => n.symbol === activeSymbol) : all;
   }, [data, activeSymbol]);
 
-  const greeting = data?.greeting ?? greetingFor(new Date());
   const dateLabel = data ? formatDate(data.date) : formatDate(new Date().toISOString());
 
   return (
@@ -94,9 +109,7 @@ export function Morning() {
             <Sunrise className="h-6 w-6" />
           </span>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              {greeting} <span className="cv-brand-gradient">·</span> Morning Research
-            </h1>
+            <h1 className="text-2xl font-bold tracking-tight">Daily Brief</h1>
             <p className="text-sm text-muted-foreground">{dateLabel}</p>
           </div>
         </div>
@@ -107,32 +120,45 @@ export function Morning() {
             </span>
           )}
           <button
-            onClick={() => load(watchlist)}
+            onClick={() => refresh(watchlist)}
             disabled={loading}
             className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium transition hover:border-primary/40 hover:text-primary disabled:opacity-50"
           >
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            <RefreshCw className={cn("h-4 w-4", (loading || summaryLoading) && "animate-spin")} />
             Refresh
           </button>
         </div>
       </div>
 
-      {/* AI Daily Brief */}
+      {/* AI Summary — market + (optional) portfolio */}
       <section className="cv-frost-card mt-6 rounded-2xl p-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            <Sparkles className="h-4 w-4 text-primary" /> Daily Brief
+            <Sparkles className="h-4 w-4 text-primary" /> Summary
           </h2>
-          {data && <BriefBadge source={data.briefSource} />}
+          {summary ? <BriefBadge source={summary.source} /> : data?.isSample ? <BriefBadge source="sample" /> : data ? <BriefBadge source={data.briefSource} /> : null}
         </div>
-        {loading && !data ? (
+        {summaryLoading ? (
           <div className="space-y-2">
             <div className="h-4 w-full animate-pulse rounded bg-muted" />
             <div className="h-4 w-11/12 animate-pulse rounded bg-muted" />
-            <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-4/5 animate-pulse rounded bg-muted" />
+          </div>
+        ) : summary ? (
+          <div className="space-y-4">
+            <div>
+              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">Market &amp; opportunities</h3>
+              <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground/90">{summary.market}</p>
+            </div>
+            {summary.portfolio ? (
+              <div>
+                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">Your portfolio</h3>
+                <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground/90">{summary.portfolio}</p>
+              </div>
+            ) : null}
           </div>
         ) : (
-          <p className="text-[15px] leading-relaxed text-foreground/90">{data?.brief}</p>
+          <p className="whitespace-pre-line text-[15px] leading-relaxed text-foreground/90">{data?.brief}</p>
         )}
       </section>
 
@@ -215,7 +241,14 @@ export function Morning() {
               <Newspaper className="h-4 w-4 text-primary" />
               News {activeSymbol && <span className="text-primary">· {activeSymbol}</span>}
             </h2>
-            <span className="text-xs text-muted-foreground/60">{news.length} items</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground/60">{news.length} items</span>
+              {news.length > 4 && (
+                <button onClick={() => setShowAllNews(true)} className="text-xs font-medium text-primary transition hover:underline">
+                  View all
+                </button>
+              )}
+            </div>
           </div>
 
           {loading && !data ? (
@@ -228,7 +261,7 @@ export function Morning() {
               ))}
             </div>
           ) : news.length ? (
-            <ul className="space-y-3">
+            <ul className="max-h-[560px] space-y-3 overflow-y-auto pr-1">
               {news.map((item) => <NewsCard key={item.id} item={item} />)}
             </ul>
           ) : (
@@ -240,11 +273,43 @@ export function Morning() {
           )}
         </section>
       </div>
+
+      {showAllNews && (
+        <NewsModal news={news} activeSymbol={activeSymbol} onClose={() => setShowAllNews(false)} />
+      )}
     </div>
   );
 }
 
 // --------------------------------------------------------------------------
+
+function NewsModal({ news, activeSymbol, onClose }: { news: MorningNewsItem[]; activeSymbol: string | null; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="cv-glass flex max-h-[85vh] w-full max-w-2xl flex-col rounded-2xl border border-border shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border px-5 py-3">
+          <h3 className="flex items-center gap-2 text-sm font-semibold">
+            <Newspaper className="h-4 w-4 text-primary" />
+            All news {activeSymbol && <span className="text-primary">· {activeSymbol}</span>}
+            <span className="text-xs font-normal text-muted-foreground/60">· {news.length}</span>
+          </h3>
+          <button onClick={onClose} className="rounded-md p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground" aria-label="Close">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <ul className="flex-1 space-y-3 overflow-y-auto p-4">
+          {news.map((item) => <NewsCard key={item.id} item={item} />)}
+        </ul>
+      </div>
+    </div>
+  );
+}
 
 function BriefBadge({ source }: { source: MorningBrief["briefSource"] }) {
   const map = {

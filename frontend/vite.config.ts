@@ -51,6 +51,8 @@ export default defineConfig(({ mode }) => {
         // `/morning` is BOTH a SPA route and an API endpoint: serve index.html
         // on browser navigation, proxy to the backend for fetch/XHR.
         "/morning": apiProxyWithHtmlFallback,
+        // `/journal` is likewise a SPA route + an API path (/journal, /journal/:id).
+        "/journal": apiProxyWithHtmlFallback,
         // `/onboarding` is a SPA route; `/onboarding/broker/*` is API. HTML
         // fallback serves the wizard on browser nav, proxies the POST.
         "/onboarding": apiProxyWithHtmlFallback,

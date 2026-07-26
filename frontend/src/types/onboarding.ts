@@ -27,3 +27,11 @@ export interface AlpacaConnectRequest {
   feed: string;
   save?: boolean;
 }
+
+export interface AlpacaStatus {
+  configured: boolean;
+  ok: boolean;
+  report?: AlpacaConnectReport;
+  error?: string | null;
+  account?: AlpacaAccountInfo | null;
+}

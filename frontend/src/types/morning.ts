@@ -30,6 +30,13 @@ export interface MorningMover {
 /** How the daily brief text was produced. */
 export type BriefSource = "ai" | "heuristic" | "sample";
 
+/** AI-written summary: market section + optional portfolio section. */
+export interface MorningSummary {
+  market: string;
+  portfolio: string | null;
+  source: "ai" | "heuristic";
+}
+
 export interface MorningBrief {
   /** ISO date (YYYY-MM-DD) the brief covers. */
   date: string;
