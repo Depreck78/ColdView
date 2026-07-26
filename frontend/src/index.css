@@ -1,0 +1,162 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode surfaces */
+    --background: 220 20% 98%;
+    --foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+
+    /* Popover: a slightly elevated surface used for floating menus,
+       tooltips, and the language switcher dropdown. Falls back to a
+       solid white (light) or surface-1 (dark) so dropdowns never
+       appear transparent and let underlying content bleed through. */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+
+    /* Brand accent — Coldview ice-blue / cyan */
+    --primary: 194 90% 42%;
+    --primary-foreground: 0 0% 100%;
+    /* Secondary accent used for gradients / glows (icy sky) */
+    --accent: 205 90% 52%;
+
+    --muted: 210 20% 93%;
+    --muted-foreground: 214 15% 42%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 20% 87%;
+    --radius: 0.65rem;
+
+    /* Semantic colors */
+    --success: 160 78% 40%;
+    --danger: 0 84% 60%;
+    --warning: 38 92% 50%;
+    --info: 199 89% 48%;
+
+    /* Chart tokens */
+    --chart-grid: 210 20% 90%;
+    --chart-text: 214 15% 42%;
+    --chart-axis: 210 20% 80%;
+    --chart-compare-a: #0ea5e9;
+    --chart-compare-b: #14b8a6;
+  }
+
+  .dark {
+    /* Dark mode: 4-level surface system — cold slate-blue */
+    --background: 213 30% 6%;       /* bg-base */
+    --foreground: 210 16% 92%;
+    --card: 214 28% 9%;             /* surface-1 */
+    --card-foreground: 210 16% 92%;
+
+    --popover: 214 28% 11%;         /* surface-1.5 (slightly lighter than card) */
+    --popover-foreground: 210 16% 92%;
+
+    --primary: 190 92% 52%;
+    --primary-foreground: 213 40% 6%;
+    --accent: 200 95% 60%;
+
+    --muted: 214 26% 14%;           /* surface-2 */
+    --muted-foreground: 212 14% 58%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 24% 18%;          /* surface-3 */
+
+    /* Semantic colors */
+    --success: 160 72% 45%;
+    --danger: 0 62% 50%;
+    --warning: 38 92% 50%;
+    --info: 199 90% 58%;
+
+    /* Chart tokens */
+    --chart-grid: 214 26% 13%;
+    --chart-text: 212 14% 46%;
+    --chart-axis: 214 24% 24%;
+    --chart-compare-a: #38bdf8;
+    --chart-compare-b: #2dd4bf;
+  }
+
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
+
+  /* Prose table enhancements */
+  .prose table { border-collapse: collapse; width: 100%; }
+  .prose th, .prose td { border: 1px solid hsl(var(--border)); }
+  .prose tbody tr:nth-child(even) { background: hsl(var(--muted) / 0.3); }
+
+  /* Smooth scrollbar for webkit */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+}
+
+/* Streaming pulse-slide animation for the "running" bar */
+@keyframes pulse-slide {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(200%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* RTL: mirror directional icons (chevrons, arrows) automatically */
+[dir="rtl"] .rtl\:flip-x { transform: scaleX(-1); }
+
+/* ===========================================================================
+   Coldview visual identity — icy/frosted modern layer
+   =========================================================================== */
+
+/* Ambient cold glow behind the app shell. Two soft radial washes of the
+   brand cyan + sky accent, kept very low-opacity so content stays legible
+   in both themes. */
+body {
+  background-image:
+    radial-gradient(1200px 600px at 12% -10%, hsl(var(--primary) / 0.10), transparent 60%),
+    radial-gradient(1000px 700px at 100% 0%, hsl(var(--accent) / 0.08), transparent 55%);
+  background-attachment: fixed;
+}
+.dark body {
+  background-image:
+    radial-gradient(1200px 600px at 10% -12%, hsl(var(--primary) / 0.14), transparent 60%),
+    radial-gradient(1100px 800px at 105% -5%, hsl(var(--accent) / 0.10), transparent 55%);
+}
+
+/* Frosted-glass surface — used for the sidebar, sticky headers, cards. */
+.cv-glass {
+  background: hsl(var(--card) / 0.72);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* Gradient brand wordmark (cyan → sky). */
+.cv-brand-gradient {
+  background-image: linear-gradient(100deg, hsl(var(--primary)), hsl(var(--accent)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Subtle frost ring / elevation for feature cards. */
+.cv-frost-card {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  box-shadow: 0 1px 0 0 hsl(0 0% 100% / 0.04) inset,
+              0 12px 30px -18px hsl(var(--primary) / 0.35);
+  transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease;
+}
+.cv-frost-card:hover {
+  border-color: hsl(var(--primary) / 0.45);
+  box-shadow: 0 1px 0 0 hsl(0 0% 100% / 0.06) inset,
+              0 18px 40px -20px hsl(var(--primary) / 0.5);
+}
+
+/* Brand logo mark — soft outer glow so the crystal reads as "cold light". */
+.cv-logo-glow { filter: drop-shadow(0 0 6px hsl(var(--primary) / 0.55)); }
+
+/* Slow drift for ambient decoration (used sparingly on the Home hero). */
+@keyframes cv-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+.cv-float { animation: cv-float 6s ease-in-out infinite; }

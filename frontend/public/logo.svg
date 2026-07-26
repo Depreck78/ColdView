@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48" fill="none">
+  <defs>
+    <linearGradient id="cvIce" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="0.55" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <!-- Crystal / viewport mark -->
+  <g>
+    <path d="M24 4 L39 13 L39 31 L24 40 L9 31 L9 13 Z" fill="url(#cvIce)"/>
+    <path d="M24 4 L39 13 L24 22 L9 13 Z" fill="#ffffff" opacity="0.22"/>
+    <path d="M24 22 L39 13 L39 31 L24 40 Z" fill="#0b1622" opacity="0.14"/>
+    <circle cx="24" cy="22" r="5" fill="#0b1622"/>
+    <circle cx="24" cy="22" r="2.2" fill="#e0f7ff"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="52" y="31" font-family="Inter, system-ui, sans-serif" font-weight="700" font-size="24" letter-spacing="-0.6" fill="#0f2a3f">Cold</text>
+  <text x="108" y="31" font-family="Inter, system-ui, sans-serif" font-weight="700" font-size="24" letter-spacing="-0.6" fill="#0ea5e9">view</text>
+</svg>
