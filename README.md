@@ -620,8 +620,8 @@ coldview-mcp               # start MCP server (stdio)
 ### Path A: Docker (zero setup)
 
 ```bash
-git clone https://github.com/HKUDS/Coldview.git
-cd Coldview
+git clone https://github.com/Depreck78/ColdView.git
+cd ColdView
 cp agent/.env.example agent/.env
 # Edit agent/.env — uncomment your LLM provider and set API key
 docker compose up --build
@@ -639,8 +639,8 @@ Your data survives updates: persistent memory, the cross-session search index, u
 ### Path B: Local install
 
 ```bash
-git clone https://github.com/HKUDS/Coldview.git
-cd Coldview
+git clone https://github.com/Depreck78/ColdView.git
+cd ColdView
 python -m venv .venv
 
 # Activate
@@ -654,6 +654,17 @@ coldview                       # Launch interactive TUI
 
 <details>
 <summary><b>Start web UI (optional)</b></summary>
+
+**One command — backend + frontend together** (install the frontend deps once first):
+
+```bash
+npm --prefix frontend install   # first time only
+coldview dev                     # backend on :8899 + frontend on :5899
+```
+
+Open `http://localhost:5899`.
+
+Or run the two halves separately, in two terminals:
 
 ```bash
 # Terminal 1: API server
