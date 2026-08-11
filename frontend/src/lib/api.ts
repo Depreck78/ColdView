@@ -51,6 +51,104 @@ export interface CorrelationRegimeResponse {
   };
 }
 
+// --- Risk x-ray (Agentic Risk CIO — Milestone 0) ---
+export interface RiskXrayData {
+  inputs: {
+    symbols: string[];
+    weights: Record<string, number>;
+    aligned_days: number;
+    return_observations: number;
+    first_date: string;
+    last_date: string;
+  };
+  concentration: {
+    hhi: number | null;
+    effective_n: number | null;
+    top1_weight: number | null;
+    top3_weight: number | null;
+  };
+  volatility: {
+    daily_vol: number | null;
+    annualized_vol: number | null;
+    downside_deviation_annualized: number | null;
+  };
+  drawdown: {
+    max_drawdown: number | null;
+    max_drawdown_start: string | null;
+    max_drawdown_trough: string | null;
+  };
+  tail_risk: {
+    var_95: number | null;
+    expected_shortfall_95: number | null;
+    var_99: number | null;
+    expected_shortfall_99: number | null;
+    method: string;
+  };
+  diversification: { diversification_ratio: number | null; note?: string };
+  correlation: {
+    avg_pairwise_abs: number | null;
+    beta_to_equal_weight: number | null;
+    note?: string;
+  };
+  // --- Milestone 1 extended metrics ---
+  risk_adjusted: {
+    sharpe: number | null;
+    sortino: number | null;
+    risk_free_annual: number;
+  };
+  parametric_tail_risk: {
+    var_95: number | null;
+    expected_shortfall_95: number | null;
+    var_99: number | null;
+    expected_shortfall_99: number | null;
+    method: string;
+    horizon: number;
+  };
+  risk_contribution: {
+    annualized_vol: number | null;
+    contributions: {
+      symbol: string;
+      weight: number | null;
+      mctr: number | null;
+      cctr: number | null;
+      pct: number | null;
+    }[];
+    note?: string;
+  };
+  capm?: {
+    beta: number | null;
+    alpha_annualized: number | null;
+    r_squared: number | null;
+    overlap_days: number;
+    note?: string;
+  };
+  skipped: { symbol: string; reason: string }[];
+  warnings: string[];
+}
+
+export interface RiskXrayResponse {
+  status: string;
+  data: RiskXrayData;
+  meta: {
+    start_date: string;
+    end_date: string;
+    interval: string;
+    source: string;
+    benchmark?: string | null;
+    unresolved_symbols: string[];
+  };
+}
+
+export interface RiskXrayRequestBody {
+  symbols: string[];
+  weights?: Record<string, number> | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  source?: string;
+  interval?: string;
+  benchmark?: string | null;
+}
+
 async function errorFromResponse(res: Response): Promise<ApiError> {
   let detail = `HTTP ${res.status}`;
   try {
@@ -124,6 +222,11 @@ export const api = {
     request<CorrelationRegimeResponse>(
       `/correlation/regime?codes=${encodeURIComponent(codes)}&days=${encodeURIComponent(String(days))}`,
     ),
+  postRiskXray: (body: RiskXrayRequestBody) =>
+    request<RiskXrayResponse>(`/risk/xray`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   listRuns: (limit?: number) => request<RunListItem[]>(`/runs${limit ? `?limit=${encodeURIComponent(String(limit))}` : ""}`),
   getRun: (id: string, params: RunDetailParams = {}) => {
     const q = new URLSearchParams();

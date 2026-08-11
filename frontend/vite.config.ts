@@ -48,6 +48,9 @@ export default defineConfig(({ mode }) => {
         "^/runs/[^/]+/?$": apiProxyWithHtmlFallback,
         "/runs": apiProxy,
         "/correlation": apiProxyWithHtmlFallback,
+        // `/risk` is a SPA route (the Risk page) AND an API path (/risk/xray):
+        // serve index.html on browser navigation, proxy fetch/XHR to the backend.
+        "/risk": apiProxyWithHtmlFallback,
         // `/morning` is BOTH a SPA route and an API endpoint: serve index.html
         // on browser navigation, proxy to the backend for fetch/XHR.
         "/morning": apiProxyWithHtmlFallback,

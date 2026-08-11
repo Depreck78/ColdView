@@ -160,3 +160,50 @@ body {
   50%      { transform: translateY(-8px); }
 }
 .cv-float { animation: cv-float 6s ease-in-out infinite; }
+
+/* ------------------------------------------------------------------
+   Daily Brief loading animation — icy shimmer + rotating gradient ring
+   ------------------------------------------------------------------ */
+
+/* Gradient sweep for skeleton lines (richer than a flat pulse). */
+@keyframes cv-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.cv-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    hsl(var(--muted)) 30%,
+    hsl(var(--primary) / 0.22) 50%,
+    hsl(var(--muted)) 70%
+  );
+  background-size: 200% 100%;
+  animation: cv-shimmer 1.6s ease-in-out infinite;
+}
+
+/* A thin conic ring, masked to its edge, spun via Tailwind's animate-spin.
+   Reads as "the brief is being composed". */
+.cv-brief-ring {
+  background: conic-gradient(
+    from 0deg,
+    hsl(var(--primary)),
+    hsl(var(--accent)),
+    transparent 65%,
+    hsl(var(--primary))
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+}
+
+/* Soft entrance for the cycling caption (re-keyed each message change). */
+@keyframes cv-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+.cv-fade-in { animation: cv-fade-in 0.4s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-shimmer,
+  .cv-brief-ring,
+  .cv-fade-in { animation: none; }
+}

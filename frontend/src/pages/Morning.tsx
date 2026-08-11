@@ -139,11 +139,7 @@ export function Morning() {
           {summary ? <BriefBadge source={summary.source} /> : data?.isSample ? <BriefBadge source="sample" /> : data ? <BriefBadge source={data.briefSource} /> : null}
         </div>
         {summaryLoading ? (
-          <div className="space-y-2">
-            <div className="h-4 w-full animate-pulse rounded bg-muted" />
-            <div className="h-4 w-11/12 animate-pulse rounded bg-muted" />
-            <div className="h-4 w-4/5 animate-pulse rounded bg-muted" />
-          </div>
+          <BriefLoader />
         ) : summary ? (
           <div className="space-y-4">
             <div>
@@ -373,6 +369,42 @@ function NewsCard({ item }: { item: MorningNewsItem }) {
         {item.snippet && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{item.snippet}</p>}
       </Wrapper>
     </li>
+  );
+}
+
+const BRIEF_STEPS = [
+  "Scanning overnight markets…",
+  "Reading the movers…",
+  "Weighing today's catalysts…",
+  "Composing your brief…",
+];
+
+function BriefLoader() {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setStep((s) => (s + 1) % BRIEF_STEPS.length), 1600);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="flex flex-col items-center gap-4 py-4" role="status" aria-live="polite">
+      {/* Rotating gradient ring around a frosted Sparkles badge */}
+      <div className="relative h-14 w-14">
+        <div className="cv-brief-ring animate-spin absolute inset-0 rounded-full" />
+        <div className="absolute inset-[3px] flex items-center justify-center rounded-full bg-card">
+          <Sparkles className="h-6 w-6 animate-pulse text-primary" />
+        </div>
+      </div>
+      {/* Cycling status caption — re-keyed so it fades in each change */}
+      <p key={step} className="cv-fade-in text-sm font-medium text-muted-foreground">
+        {BRIEF_STEPS[step]}
+      </p>
+      {/* Shimmer skeleton hinting at the brief's shape */}
+      <div className="mt-1 w-full max-w-xl space-y-2.5">
+        <div className="cv-shimmer h-3.5 w-full rounded" />
+        <div className="cv-shimmer h-3.5 w-11/12 rounded" />
+        <div className="cv-shimmer h-3.5 w-4/5 rounded" />
+      </div>
+    </div>
   );
 }
 

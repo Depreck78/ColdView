@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Activity, BarChart3, FileText, Plus, Trash2, Pencil, MessageSquare, ChevronsLeft, ChevronsRight, Settings, Layers, Loader2, Sunrise, NotebookPen } from "lucide-react";
+import { Activity, BarChart3, FileText, Plus, Trash2, Pencil, MessageSquare, ChevronsLeft, ChevronsRight, Settings, Layers, Loader2, Sunrise, NotebookPen, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/common/Logo";
 import { api, type SessionItem } from "@/lib/api";
@@ -22,6 +22,7 @@ export function Layout() {
     { to: "/reports", icon: FileText, label: t('layout.reports') },
     { to: "/alpha-zoo", icon: Layers, label: t('layout.alphaZoo') },
     { to: "/correlation", icon: BarChart3, label: t('layout.correlation') },
+    { to: "/risk", icon: ShieldAlert, label: t('layout.risk', 'Risk') },
   ];
   const { pathname } = useLocation();
   const navigate = useNavigate();

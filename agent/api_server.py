@@ -203,6 +203,10 @@ register_system_routes(app)
 
 from src.api.system_routes import _terminate_current_process  # noqa: F401, E402
 
+# --- Risk (Agentic Risk CIO — portfolio risk x-ray) ---
+from src.api.risk_routes import register_risk_routes  # noqa: E402
+register_risk_routes(app)
+
 # --- Morning Research (retention workflow: news digest + movers + brief) ---
 from src.api.morning_routes import register_morning_routes  # noqa: E402
 register_morning_routes(app)

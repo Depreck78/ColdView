@@ -46,9 +46,17 @@ def _is_supported(code: str) -> bool:
     Covers US/HK/India equities plus Yahoo's own futures (``GC=F``) and forex
     (``EURUSD=X``) suffix conventions, which the public chart endpoint serves
     verbatim (the code is used as-is in the request URL, no conversion) (#718).
+    Also covers Yahoo index symbols (``^VIX``, ``^GSPC``) and bare US equity
+    tickers (``AAPL``, ``SPY``) — Yahoo carries both verbatim. Crypto and forex
+    symbols carry a separator and A-share codes are numeric, so neither can
+    reach the bare-ticker branch.
     """
     upper = code.strip().upper()
-    return upper.endswith((".US", ".HK", ".NS", ".BO", "=F", "=X"))
+    if upper.endswith((".US", ".HK", ".NS", ".BO", "=F", "=X")):
+        return True
+    if upper.startswith("^") and upper[1:].isalnum():
+        return True
+    return 1 <= len(upper) <= 5 and upper.isalpha()
 
 
 def _to_yahoo_interval(interval: str) -> str:

@@ -73,6 +73,14 @@ class PortfolioRiskXrayTool(BaseTool):
                 "type": "string",
                 "description": "Bar interval passed to the loaders; defaults to '1D'.",
             },
+            "benchmark": {
+                "type": "string",
+                "description": (
+                    "Optional benchmark symbol for CAPM beta (e.g. 'SPY'). When "
+                    "omitted, the regional benchmark is inferred from the basket "
+                    "(SPY for US, CSI 300 for A-shares, etc.). Pass '' to skip CAPM."
+                ),
+            },
         },
         "required": ["symbols"],
     }
@@ -112,11 +120,22 @@ class PortfolioRiskXrayTool(BaseTool):
             end_date=end_date,
             source=source,
             interval=interval,
+            # Risk statistics need the full return series; the loader's default
+            # row cap (max_rows=250) would decimate a year of daily bars to
+            # every-2nd-row, skewing volatility/VaR. 0 = return all rows.
+            max_rows=0,
         )
         closes = self._closes_frame(raw, symbols)
         unresolved = raw.get("_unresolved") if isinstance(raw, Mapping) else None
 
-        report = compute_risk_xray(closes, weights)
+        # Resolve a benchmark return series for CAPM beta. Best-effort: a
+        # benchmark fetch failure must never sink the whole x-ray, so the
+        # CAPM section is simply absent when it can't be resolved.
+        bench_returns, bench_ticker = self._benchmark_returns(
+            symbols, source, start_date, end_date, interval, kwargs.get("benchmark")
+        )
+
+        report = compute_risk_xray(closes, weights, benchmark_returns=bench_returns)
         envelope = {
             "status": "ok",
             "data": report,
@@ -125,10 +144,47 @@ class PortfolioRiskXrayTool(BaseTool):
                 "end_date": end_date,
                 "interval": interval,
                 "source": source,
+                "benchmark": bench_ticker,
                 "unresolved_symbols": list(unresolved or []),
             },
         }
         return json.dumps(envelope, ensure_ascii=False, indent=2, allow_nan=False)
+
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _benchmark_returns(
+        symbols: list[str],
+        source: str,
+        start_date: str,
+        end_date: str,
+        interval: str,
+        explicit: Any,
+    ) -> tuple[Any, str | None]:
+        """Resolve a benchmark return series (and its ticker) for CAPM beta.
+
+        Returns ``(None, None)`` when the caller opts out (``benchmark=""``),
+        no benchmark applies (e.g. forex), or the fetch fails — the x-ray then
+        simply omits the CAPM section.
+        """
+        if isinstance(explicit, str) and not explicit.strip():
+            return None, None  # explicit opt-out
+        try:
+            from backtest.benchmark import resolve_benchmark
+
+            result = resolve_benchmark(
+                symbols,
+                source,
+                start_date,
+                end_date,
+                interval=interval,
+                explicit=(explicit.strip() if isinstance(explicit, str) and explicit.strip() else None),
+            )
+        except Exception as exc:  # noqa: BLE001 — benchmark is best-effort
+            logger.debug("benchmark resolution failed: %s", exc)
+            return None, None
+        if result is None:
+            return None, None
+        return result.ret_series, result.ticker
 
     # ------------------------------------------------------------------
     @staticmethod
@@ -167,6 +223,11 @@ class PortfolioRiskXrayTool(BaseTool):
         series: dict[str, pd.Series] = {}
         for sym in symbols:
             records = raw.get(sym)
+            # When the loader's row cap trips it wraps the bars in a
+            # truncation envelope ({"truncated": True, "data": [...]}) instead
+            # of a bare list; unwrap it so a capped fetch never looks empty.
+            if isinstance(records, Mapping) and "data" in records:
+                records = records.get("data")
             if not records:
                 continue
             times: list[Any] = []

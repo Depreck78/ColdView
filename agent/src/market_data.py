@@ -40,6 +40,15 @@ _SOURCE_PATTERNS = [
     # the 4-letter /USDT crypto rule above.
     (re.compile(r"^[A-Z]{3}/[A-Z]{3}$", re.I), "mt5"),
     (re.compile(r"^[A-Z]{6}\.FX$", re.I), "mt5"),
+    # Low-priority Yahoo catch-alls (evaluated only after every explicit
+    # suffix/separator rule above). Yahoo index symbols carry a caret prefix
+    # (^VIX, ^GSPC, ^HSI); bare 1-5 letter tickers with no market suffix are
+    # overwhelmingly US equities (AAPL, SPY, TSLA) — without this they fell
+    # through to the ``tushare`` default and were routed to China loaders that
+    # cannot resolve them. A-share codes are numeric and crypto/forex carry a
+    # separator, so neither can collide with these.
+    (re.compile(r"^\^[A-Z0-9]+$", re.I), "yahoo"),
+    (re.compile(r"^[A-Z]{1,5}$", re.I), "yahoo"),
 ]
 
 

@@ -86,6 +86,7 @@ def compute_risk_xray(
     periods_per_year: int = PERIODS_PER_YEAR,
     var_levels: Sequence[float] = VAR_LEVELS,
     min_history: int = MIN_HISTORY_DAYS,
+    benchmark_returns: pd.Series | None = None,
 ) -> dict[str, Any]:
     """Compute the risk x-ray for a weighted basket.
 
@@ -167,6 +168,23 @@ def compute_risk_xray(
         "skipped": skipped,
         "warnings": warnings,
     }
+
+    # Extended "Measure"/"Explain" metrics (Agentic Risk CIO — Milestone 1).
+    # Imported lazily: risk_metrics / risk_attribution import _finite from this
+    # module, so a top-level import would be circular.
+    from backtest.risk_attribution import risk_contributions
+    from backtest.risk_metrics import capm_beta, parametric_tail_risk, sharpe_sortino
+
+    result["risk_adjusted"] = sharpe_sortino(port_returns, periods_per_year=periods_per_year)
+    result["parametric_tail_risk"] = parametric_tail_risk(port_returns, levels=var_levels)
+    result["risk_contribution"] = risk_contributions(
+        returns, {sym: weights[sym] for sym in kept}, periods_per_year=periods_per_year
+    )
+    if benchmark_returns is not None:
+        result["capm"] = capm_beta(
+            port_returns, benchmark_returns, periods_per_year=periods_per_year
+        )
+
     return result
 
 
