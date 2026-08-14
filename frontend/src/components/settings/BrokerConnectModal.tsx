@@ -27,6 +27,7 @@ export function BrokerConnectModal({ broker, connected, onClose, onConnected }: 
   const [values, setValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedJson, setCopiedJson] = useState(false);
   const [profile, setProfile] = useState("paper");
   const [feed, setFeed] = useState("iex");
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -35,6 +36,7 @@ export function BrokerConnectModal({ broker, connected, onClose, onConnected }: 
   useEffect(() => {
     setValues({});
     setCopied(false);
+    setCopiedJson(false);
     setProfile("paper");
     setFeed("iex");
   }, [broker?.id]);
@@ -93,6 +95,17 @@ export function BrokerConnectModal({ broker, connected, onClose, onConnected }: 
       await navigator.clipboard.writeText(snippet);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Could not copy to clipboard");
+    }
+  };
+
+  const copyConfigJson = async () => {
+    if (!broker.configJson) return;
+    try {
+      await navigator.clipboard.writeText(broker.configJson);
+      setCopiedJson(true);
+      setTimeout(() => setCopiedJson(false), 2000);
     } catch {
       toast.error("Could not copy to clipboard");
     }
@@ -199,6 +212,31 @@ export function BrokerConnectModal({ broker, connected, onClose, onConnected }: 
         {/* Manual setup steps + copyable snippet */}
         {!isForm && (
           <div className="mt-5 grid gap-3">
+            {broker.configJson && (
+              <div className="rounded-lg border bg-muted/30">
+                <div className="flex items-center justify-between border-b px-3 py-2">
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {broker.configFile}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={copyConfigJson}
+                    className="inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs text-muted-foreground transition hover:text-foreground"
+                  >
+                    {copiedJson ? (
+                      <Check className="h-3.5 w-3.5 text-success" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                    {copiedJson ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <pre className="max-h-56 overflow-auto px-3 py-2 font-mono text-[11px] leading-relaxed text-foreground/80">
+                  {broker.configJson}
+                </pre>
+              </div>
+            )}
+
             {snippet && (
               <div className="rounded-lg border bg-muted/30">
                 <div className="flex items-center justify-between border-b px-3 py-2">

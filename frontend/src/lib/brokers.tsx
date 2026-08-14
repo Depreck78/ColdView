@@ -40,6 +40,12 @@ export interface Broker {
   fields: BrokerField[];
   /** Extra setup steps for `manual` brokers (shown as an ordered list). */
   steps?: string[];
+  /**
+   * A JSON block the user must add to a config file before the CLI steps work
+   * (currently only the remote-MCP brokers). Rendered with its own copy button.
+   */
+  configFile?: string;
+  configJson?: string;
   docsUrl?: string;
   docsLabel?: string;
 }
@@ -74,7 +80,7 @@ export const BROKERS: Broker[] = [
     steps: [
       "Install and launch TWS or IB Gateway, and log in.",
       "In TWS: File → Global Configuration → API → Settings, tick “Enable ActiveX and Socket Clients”.",
-      "Select the profile with: coldview connector use ibkr",
+      "Select the profile with: coldview connector configure ibkr-paper-local, then: coldview connector use ibkr-paper-local",
     ],
     docsUrl: "https://www.interactivebrokers.com/en/trading/tws.php",
     docsLabel: "Download TWS",
@@ -85,12 +91,36 @@ export const BROKERS: Broker[] = [
     markets: "US equities · OAuth",
     method: "manual",
     accent: "#00C805",
-    how: "OAuth — you authorize at Robinhood; Coldview never sees your password.",
+    how: "Remote MCP with OAuth — you authorize at Robinhood; Coldview never sees your password. Add the read-only server config below first, then authorize.",
     fields: [],
+    configFile: "~/.coldview/agent.json",
+    configJson: `{
+  "mcpServers": {
+    "robinhood": {
+      "type": "streamableHttp",
+      "url": "https://agent.robinhood.com/mcp/trading",
+      "initTimeout": 300.0,
+      "auth": {
+        "type": "oauth",
+        "scopes": ["trading.read"],
+        "clientName": "Coldview",
+        "cacheDir": "~/.coldview/live/robinhood/oauth"
+      },
+      "enabledTools": [
+        "get_accounts",
+        "get_portfolio",
+        "get_equity_positions",
+        "get_equity_quotes",
+        "get_equity_orders"
+      ]
+    }
+  }
+}`,
     steps: [
-      "Run: coldview connector use robinhood",
-      "Complete the OAuth sign-in in the browser window that opens.",
-      "Trading stays read-only until you commit a mandate in the app.",
+      "Add the JSON above to ~/.coldview/agent.json (merge into mcpServers if the file exists).",
+      "Select the profile: coldview connector use robinhood-live-mcp",
+      "Authorize: coldview connector authorize robinhood-live-mcp — this opens Robinhood's sign-in.",
+      "Verify it worked: coldview connector positions",
     ],
   },
   {
@@ -105,7 +135,7 @@ export const BROKERS: Broker[] = [
       { key: "account", label: "Account", placeholder: "Your trading account number" },
       { key: "private_key_path", label: "Private key path", placeholder: "~/.coldview/tiger_private_key.pem", secret: true },
     ],
-    steps: ["Select the profile with: coldview connector use tiger"],
+    steps: ["Select the profile with: coldview connector use tiger-paper-sdk"],
     docsUrl: "https://quant.itiger.com/",
     docsLabel: "Tiger developer portal",
   },
@@ -121,7 +151,7 @@ export const BROKERS: Broker[] = [
       { key: "secret", label: "Secret key", placeholder: "Your OKX secret", secret: true },
       { key: "passphrase", label: "Passphrase", placeholder: "The passphrase you set", secret: true },
     ],
-    steps: ["Create a read-only API key in OKX, then: coldview connector use okx"],
+    steps: ["Create a read-only API key in OKX, then: coldview connector use okx-paper-sdk"],
     docsUrl: "https://www.okx.com/account/my-api",
     docsLabel: "OKX API keys",
   },
@@ -136,7 +166,7 @@ export const BROKERS: Broker[] = [
       { key: "api_key", label: "API key", placeholder: "Your Binance API key" },
       { key: "secret", label: "Secret key", placeholder: "Your Binance secret", secret: true },
     ],
-    steps: ["Create a read-only API key in Binance, then: coldview connector use binance"],
+    steps: ["Create a read-only API key in Binance, then: coldview connector use binance-paper-sdk"],
     docsUrl: "https://www.binance.com/en/my/settings/api-management",
     docsLabel: "Binance API management",
   },
@@ -185,7 +215,7 @@ export const BROKERS: Broker[] = [
     accent: "#00AAE4",
     how: "A single API key generated in the Trading 212 app.",
     fields: [{ key: "api_key", label: "API key", placeholder: "Your Trading 212 API key", secret: true }],
-    steps: ["Generate an API key in the app, then: coldview connector use trading212"],
+    steps: ["Generate an API key in the app, then: coldview connector use trading212-paper-sdk"],
   },
   {
     id: "dhan",
@@ -198,7 +228,7 @@ export const BROKERS: Broker[] = [
       { key: "client_id", label: "Client ID", placeholder: "Your Dhan client ID" },
       { key: "access_token", label: "Access token", placeholder: "Your Dhan access token", secret: true },
     ],
-    steps: ["Select the profile with: coldview connector use dhan"],
+    steps: ["Select the profile with: coldview connector use dhan-paper-sdk"],
     docsUrl: "https://dhanhq.co/docs/",
     docsLabel: "Dhan API docs",
   },
@@ -216,7 +246,7 @@ export const BROKERS: Broker[] = [
       { key: "vendor_code", label: "Vendor code", placeholder: "Provided by Shoonya" },
       { key: "api_secret", label: "API secret", placeholder: "Provided by Shoonya", secret: true },
     ],
-    steps: ["Select the profile with: coldview connector use shoonya"],
+    steps: ["Select the profile with: coldview connector use shoonya-paper-sdk"],
     docsUrl: "https://shoonya.com/api-documentation",
     docsLabel: "Shoonya API docs",
   },
@@ -234,7 +264,7 @@ export const BROKERS: Broker[] = [
     ],
     steps: [
       "Install and launch the MetaTrader 5 terminal, and log in.",
-      "Select the profile with: coldview connector use mt5",
+      "Select the profile with: coldview connector use mt5-paper-sdk",
     ],
   },
 ];
