@@ -150,6 +150,17 @@ export interface RiskXrayResponse {
   };
 }
 
+export interface BrokerConnectStatus {
+  broker: string;
+  seeded: boolean;
+  connected: boolean;
+  /** "idle" | "authorizing" | "connected" | "error" */
+  status: string;
+  error?: string | null;
+  config_path?: string;
+  note?: string;
+}
+
 export interface RiskLiveRequestBody {
   profile_id?: string | null;
   base_currency?: string | null;
@@ -252,6 +263,13 @@ export const api = {
     request<RiskXrayResponse>(`/risk/live`, {
       method: "POST",
       body: JSON.stringify(body),
+    }),
+  getBrokerConnectStatus: (broker: string) =>
+    request<BrokerConnectStatus>(`/live/connect/${encodeURIComponent(broker)}`),
+  startBrokerConnect: (broker: string) =>
+    request<BrokerConnectStatus>(`/live/connect/${encodeURIComponent(broker)}`, {
+      method: "POST",
+      body: JSON.stringify({ seed_config: true }),
     }),
   listRuns: (limit?: number) => request<RunListItem[]>(`/runs${limit ? `?limit=${encodeURIComponent(String(limit))}` : ""}`),
   getRun: (id: string, params: RunDetailParams = {}) => {

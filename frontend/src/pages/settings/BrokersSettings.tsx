@@ -73,6 +73,10 @@ export function BrokersSettings() {
                   </span>
                 ) : broker.id === "alpaca" && statusLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                ) : broker.method === "oauth" ? (
+                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                    Sign in
+                  </span>
                 ) : broker.method === "manual" ? (
                   <span className="rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[11px] text-muted-foreground">
                     Manual setup

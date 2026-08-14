@@ -15,7 +15,7 @@
  * official broker logos — the app ships no third-party trademark assets.
  */
 
-export type BrokerMethod = "form" | "manual";
+export type BrokerMethod = "form" | "oauth" | "manual";
 
 export interface BrokerField {
   /** Config key — also the env/CLI key used in the generated snippet. */
@@ -89,9 +89,9 @@ export const BROKERS: Broker[] = [
     id: "robinhood",
     name: "Robinhood",
     markets: "US equities · OAuth",
-    method: "manual",
+    method: "oauth",
     accent: "#00C805",
-    how: "Remote MCP with OAuth — you authorize at Robinhood; Coldview never sees your password. Add the read-only server config below first, then authorize.",
+    how: "Sign in at Robinhood in your browser — Coldview never sees your password, and only read access is requested. Connect sets up the read-only config for you.",
     fields: [],
     configFile: "~/.coldview/agent.json",
     configJson: `{

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, Copy, ExternalLink, KeyRound, Loader2, X } from "lucide-react";
+import { Check, Copy, ExternalLink, KeyRound, Loader2, LogIn, X } from "lucide-react";
 import { toast } from "sonner";
 import { BrokerMark, type Broker } from "@/lib/brokers";
-import { api } from "@/lib/api";
+import { api, type BrokerConnectStatus } from "@/lib/api";
 
 interface Props {
   broker: Broker | null;
@@ -28,6 +28,8 @@ export function BrokerConnectModal({ broker, connected, onClose, onConnected }: 
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedJson, setCopiedJson] = useState(false);
+  const [oauth, setOauth] = useState<BrokerConnectStatus | null>(null);
+  const [showManual, setShowManual] = useState(false);
   const [profile, setProfile] = useState("paper");
   const [feed, setFeed] = useState("iex");
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -37,9 +39,47 @@ export function BrokerConnectModal({ broker, connected, onClose, onConnected }: 
     setValues({});
     setCopied(false);
     setCopiedJson(false);
+    setOauth(null);
+    setShowManual(false);
     setProfile("paper");
     setFeed("iex");
   }, [broker?.id]);
+
+  // OAuth brokers: read current state on open, then poll while the browser
+  // sign-in is in flight so the dialog flips to "Connected" on its own.
+  useEffect(() => {
+    if (!broker || broker.method !== "oauth") return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const poll = async (delay: number) => {
+      timer = setTimeout(async () => {
+        if (cancelled) return;
+        try {
+          const s = await api.getBrokerConnectStatus(broker.id);
+          if (cancelled) return;
+          setOauth(s);
+          if (s.status === "authorizing") poll(2000);
+        } catch {
+          /* transient — stop polling quietly */
+        }
+      }, delay);
+    };
+
+    api
+      .getBrokerConnectStatus(broker.id)
+      .then((s) => {
+        if (cancelled) return;
+        setOauth(s);
+        if (s.status === "authorizing") poll(2000);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [broker]);
 
   useEffect(() => {
     if (!broker) return;
@@ -64,6 +104,10 @@ export function BrokerConnectModal({ broker, connected, onClose, onConnected }: 
   if (!broker) return null;
 
   const isForm = broker.method === "form";
+  const isOauth = broker.method === "oauth";
+  const isManual = broker.method === "manual";
+  const oauthConnected = !!oauth?.connected;
+  const oauthAuthorizing = oauth?.status === "authorizing";
   const missingRequired = isForm && broker.fields.some((f) => !values[f.key]?.trim());
 
   const connect = async () => {
@@ -97,6 +141,29 @@ export function BrokerConnectModal({ broker, connected, onClose, onConnected }: 
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Could not copy to clipboard");
+    }
+  };
+
+  const startOauth = async () => {
+    if (!broker) return;
+    setSubmitting(true);
+    try {
+      const s = await api.startBrokerConnect(broker.id);
+      setOauth(s);
+      if (s.status === "authorizing") {
+        toast.info("Complete the sign-in in the browser window that just opened.");
+      } else if (s.status === "connected") {
+        toast.success(`${broker.name} connected`);
+        onConnected?.();
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not start the sign-in";
+      toast.error(msg);
+      // A non-local API host can't drive a browser — offer the CLI path.
+      setShowManual(true);
+      setOauth((o) => ({ ...(o ?? { broker: broker.id, seeded: false, connected: false }), status: "error", error: msg }));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -209,8 +276,57 @@ export function BrokerConnectModal({ broker, connected, onClose, onConnected }: 
           </div>
         )}
 
+        {/* OAuth brokers: one-click sign-in, with the CLI path as a fallback */}
+        {isOauth && (
+          <div className="mt-5 grid gap-3">
+            {oauthConnected ? (
+              <div className="flex items-center gap-2 rounded-lg border border-success/30 bg-success/5 px-3 py-2.5 text-sm text-success">
+                <Check className="h-4 w-4 shrink-0" />
+                Connected — Coldview can read your positions.
+              </div>
+            ) : oauthAuthorizing ? (
+              <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 text-sm">
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+                <span>
+                  Waiting for you to finish signing in at {broker.name}…
+                  <span className="block text-xs text-muted-foreground">
+                    A browser window should have opened. This dialog updates itself.
+                  </span>
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={startOauth}
+                disabled={submitting}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
+                {submitting ? "Opening…" : `Connect with ${broker.name}`}
+              </button>
+            )}
+
+            {oauth?.error && (
+              <p className="text-xs leading-relaxed text-danger">{oauth.error}</p>
+            )}
+
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Read-only: only position, order, and quote reads are requested — never
+              order placement. Sign-in opens on the machine running Coldview.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setShowManual((v) => !v)}
+              className="w-fit text-xs text-muted-foreground underline-offset-2 transition hover:text-foreground hover:underline"
+            >
+              {showManual ? "Hide manual setup" : "Set up manually instead"}
+            </button>
+          </div>
+        )}
+
         {/* Manual setup steps + copyable snippet */}
-        {!isForm && (
+        {(isManual || (isOauth && showManual)) && (
           <div className="mt-5 grid gap-3">
             {broker.configJson && (
               <div className="rounded-lg border bg-muted/30">
