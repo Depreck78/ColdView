@@ -126,6 +126,15 @@ export interface RiskXrayData {
   warnings: string[];
 }
 
+export interface RiskLiveMeta {
+  profile_id: string | null;
+  gross_value: number | null;
+  base_currency: string | null;
+  position_count: number;
+  skipped: { symbol: string; reason: string }[];
+  warnings: string[];
+}
+
 export interface RiskXrayResponse {
   status: string;
   data: RiskXrayData;
@@ -136,7 +145,19 @@ export interface RiskXrayResponse {
     source: string;
     benchmark?: string | null;
     unresolved_symbols: string[];
+    /** Present only on /risk/live responses. */
+    live?: RiskLiveMeta;
   };
+}
+
+export interface RiskLiveRequestBody {
+  profile_id?: string | null;
+  base_currency?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  source?: string;
+  interval?: string;
+  benchmark?: string | null;
 }
 
 export interface RiskXrayRequestBody {
@@ -224,6 +245,11 @@ export const api = {
     ),
   postRiskXray: (body: RiskXrayRequestBody) =>
     request<RiskXrayResponse>(`/risk/xray`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  postRiskLive: (body: RiskLiveRequestBody = {}) =>
+    request<RiskXrayResponse>(`/risk/live`, {
       method: "POST",
       body: JSON.stringify(body),
     }),

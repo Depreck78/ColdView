@@ -38,7 +38,10 @@ function Tile({ label, value, hint, tone = "default" }: TileProps) {
   );
 }
 
+type Mode = "manual" | "live";
+
 export function Risk() {
+  const [mode, setMode] = useState<Mode>("manual");
   const [codes, setCodes] = useState("AAPL,MSFT,SPY");
   const [weightsText, setWeightsText] = useState("");
   const [days, setDays] = useState<number>(365);
@@ -76,26 +79,33 @@ export function Risk() {
     const generation = ++requestGeneration.current;
     setError(null);
     setResult(null);
-    const symbols = codes
-      .split(",")
-      .map((c) => c.trim())
-      .filter(Boolean);
-    let weights: Record<string, number> | null;
-    try {
-      weights = parseWeights(symbols);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Invalid weights");
-      return;
+
+    const start = new Date();
+    start.setDate(start.getDate() - days);
+    const startDate = start.toISOString().slice(0, 10);
+
+    // Live mode needs no basket input — the broker supplies the holdings.
+    let payload: Promise<RiskXrayResponse>;
+    if (mode === "live") {
+      payload = api.postRiskLive({ start_date: startDate });
+    } else {
+      const symbols = codes
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean);
+      let weights: Record<string, number> | null;
+      try {
+        weights = parseWeights(symbols);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Invalid weights");
+        return;
+      }
+      payload = api.postRiskXray({ symbols, weights, start_date: startDate });
     }
+
     setLoading(true);
     try {
-      const start = new Date();
-      start.setDate(start.getDate() - days);
-      const res = await api.postRiskXray({
-        symbols,
-        weights,
-        start_date: start.toISOString().slice(0, 10),
-      });
+      const res = await payload;
       if (requestGeneration.current === generation) setResult(res);
     } catch (e) {
       if (requestGeneration.current === generation) {
@@ -127,44 +137,82 @@ export function Risk() {
 
       {/* Controls */}
       <div className="flex flex-col gap-4 border rounded-lg p-4">
+        {/* Mode: analyze a typed basket, or the live broker portfolio */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">{i18n.t("risk.symbols", "Symbols")}</label>
-          <input
-            type="text"
-            value={codes}
-            onChange={(e) => {
-              invalidateResult();
-              setCodes(e.target.value);
-            }}
-            placeholder="AAPL.US,MSFT.US,SPY.US"
-            className="w-full px-3 py-2 rounded-md border bg-background text-sm"
-          />
-          <p className="text-xs text-muted-foreground">
-            {i18n.t(
-              "risk.symbolsHint",
-              "Comma-separated, loader-suffixed (e.g. AAPL.US, 600519.SH, BTC-USDT).",
-            )}
-          </p>
+          <label className="text-sm font-medium">{i18n.t("risk.mode", "Portfolio")}</label>
+          <div className="flex gap-1.5">
+            {([
+              ["manual", i18n.t("risk.modeManual", "Manual basket")],
+              ["live", i18n.t("risk.modeLive", "Live portfolio")],
+            ] as const).map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => {
+                  invalidateResult();
+                  setMode(value);
+                }}
+                className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                  mode === value
+                    ? "bg-primary text-primary-foreground"
+                    : "border-muted-foreground/30 hover:border-primary"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {mode === "live" && (
+            <p className="text-xs text-muted-foreground">
+              {i18n.t(
+                "risk.modeLiveHint",
+                "Reads positions from your connected broker (read-only) and weights them by market value. Long-only, single-currency — anything excluded is listed with the result.",
+              )}
+            </p>
+          )}
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium">
-            {i18n.t("risk.weights", "Weights (optional)")}
-          </label>
-          <input
-            type="text"
-            value={weightsText}
-            onChange={(e) => {
-              invalidateResult();
-              setWeightsText(e.target.value);
-            }}
-            placeholder="AAPL.US=0.4, MSFT.US=0.4, SPY.US=0.2"
-            className="w-full px-3 py-2 rounded-md border bg-background text-sm"
-          />
-          <p className="text-xs text-muted-foreground">
-            {i18n.t("risk.weightsHint", "Leave blank for equal weights. Renormalized to sum 1.")}
-          </p>
-        </div>
+        {mode === "manual" && (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium">{i18n.t("risk.symbols", "Symbols")}</label>
+              <input
+                type="text"
+                value={codes}
+                onChange={(e) => {
+                  invalidateResult();
+                  setCodes(e.target.value);
+                }}
+                placeholder="AAPL,MSFT,SPY"
+                className="w-full px-3 py-2 rounded-md border bg-background text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                {i18n.t(
+                  "risk.symbolsHint",
+                  "Comma-separated, loader-suffixed (e.g. AAPL.US, 600519.SH, BTC-USDT).",
+                )}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium">
+                {i18n.t("risk.weights", "Weights (optional)")}
+              </label>
+              <input
+                type="text"
+                value={weightsText}
+                onChange={(e) => {
+                  invalidateResult();
+                  setWeightsText(e.target.value);
+                }}
+                placeholder="AAPL=0.4, MSFT=0.4, SPY=0.2"
+                className="w-full px-3 py-2 rounded-md border bg-background text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                {i18n.t("risk.weightsHint", "Leave blank for equal weights. Renormalized to sum 1.")}
+              </p>
+            </div>
+          </>
+        )}
 
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium">{i18n.t("risk.windowDays", "Lookback")}</label>
@@ -193,7 +241,11 @@ export function Risk() {
           disabled={loading}
           className="self-start px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
-          {loading ? i18n.t("risk.loading", "Computing…") : i18n.t("risk.compute", "Analyze risk")}
+          {loading
+            ? i18n.t("risk.loading", "Computing…")
+            : mode === "live"
+              ? i18n.t("risk.computeLive", "Analyze my portfolio")
+              : i18n.t("risk.compute", "Analyze risk")}
         </button>
       </div>
 
@@ -207,6 +259,37 @@ export function Risk() {
       {/* Results */}
       {d && (
         <div className="flex flex-col gap-4">
+          {/* Live portfolio summary — what was read, and what was left out */}
+          {result?.meta.live && (
+            <div className="flex flex-col gap-2 border rounded-lg p-4 bg-primary/5 border-primary/20">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {i18n.t("risk.livePortfolio", "Live portfolio")}
+                </span>
+                <span className="text-sm tabular-nums">
+                  {result.meta.live.gross_value?.toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })}{" "}
+                  {result.meta.live.base_currency ?? ""} ·{" "}
+                  {Object.keys(d.inputs.weights).length}/{result.meta.live.position_count}{" "}
+                  {i18n.t("risk.positionsAnalyzed", "positions analyzed")}
+                </span>
+              </div>
+              {(result.meta.live.skipped.length > 0 || result.meta.live.warnings.length > 0) && (
+                <div className="flex flex-col gap-1 text-xs text-amber-500">
+                  {result.meta.live.warnings.map((w) => (
+                    <span key={w}>{w}</span>
+                  ))}
+                  {result.meta.live.skipped.map((s) => (
+                    <span key={s.symbol}>
+                      Excluded {s.symbol}: {s.reason}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Tile
               label={i18n.t("risk.annVol", "Annualized volatility")}
