@@ -1,7 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import i18n from "@/i18n";
 import { QVerisSettings } from "@/components/settings/QVerisSettings";
-import { Settings } from "../Settings";
 
 const apiMock = vi.hoisted(() => ({
   getLLMSettings: vi.fn(),
@@ -156,10 +155,10 @@ describe("Settings QVeris card", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders inside Settings and shows loaded config, balance, and recent usage", async () => {
+  it("shows loaded config, balance, and recent usage", async () => {
     mockQVerisFetch();
 
-    render(<Settings />);
+    render(<QVerisSettings />);
 
     expect(await screen.findByText("QVeris Tool Marketplace")).toBeInTheDocument();
     expect(await screen.findByDisplayValue("https://qveris.ai/api/v1")).toBeInTheDocument();
