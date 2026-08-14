@@ -56,7 +56,7 @@ _JOB: dict[str, Any] = {
 
 
 def _base_url() -> str:
-    return os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")
+    return os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434").rstrip("/")  # noqa: env-gate (not in config schema)
 
 
 def _append_log(line: str) -> None:

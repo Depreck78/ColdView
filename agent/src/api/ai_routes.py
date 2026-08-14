@@ -60,12 +60,12 @@ def register_ai_routes(app: FastAPI) -> None:
         # Resolve key + base URL: request wins, else the saved env values.
         key = body.api_key.strip()
         if not key and cfg.get("api_key_env"):
-            key = (os.environ.get(str(cfg["api_key_env"])) or "").strip()
+            key = (os.environ.get(str(cfg["api_key_env"])) or "").strip()  # noqa: env-gate (dynamic provider key name)
 
         base = body.base_url.strip()
         if not base:
             env = cfg.get("base_url_env")
-            base = (os.environ.get(str(env)) if env else "") or str(cfg.get("default_base_url") or "")
+            base = (os.environ.get(str(env)) if env else "") or str(cfg.get("default_base_url") or "")  # noqa: env-gate (dynamic base-url env name)
         base = base.strip().rstrip("/")
 
         if not base:
