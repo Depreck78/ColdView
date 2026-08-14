@@ -178,30 +178,23 @@ async def _stop_scheduled_research_on_shutdown() -> None:
 # ============================================================================
 
 # --- Runs ---
-from src.api.runs_routes import register_runs_routes  # noqa: E402
+from src.api.runs_routes import (  # noqa: F401, E402
+    register_runs_routes, _load_json_file, _load_csv_to_dict, _build_response_from_run_dir,
+)
 register_runs_routes(app)
 
-from src.api.runs_routes import (  # noqa: F401, E402
-    _load_json_file,
-    _load_csv_to_dict,
-    _build_response_from_run_dir,
-)
-
 # --- Sessions ---
-from src.api.sessions_routes import register_sessions_routes  # noqa: E402
+from src.api.sessions_routes import (  # noqa: F401, E402
+    register_sessions_routes, _goal_store,
+    _live_action_frame_from_tool_result, _mandate_proposal_frame_from_tool_result,
+)
 register_sessions_routes(app)
 
-from src.api.sessions_routes import (  # noqa: F401, E402
-    _goal_store,
-    _live_action_frame_from_tool_result,
-    _mandate_proposal_frame_from_tool_result,
-)
-
 # --- System ---
-from src.api.system_routes import register_system_routes  # noqa: E402
+from src.api.system_routes import (  # noqa: F401, E402
+    register_system_routes, _terminate_current_process,
+)
 register_system_routes(app)
-
-from src.api.system_routes import _terminate_current_process  # noqa: F401, E402
 
 # --- Risk (Agentic Risk CIO — portfolio risk x-ray) ---
 from src.api.risk_routes import register_risk_routes  # noqa: E402
@@ -228,26 +221,17 @@ from src.api.journal_routes import register_journal_routes  # noqa: E402
 register_journal_routes(app)
 
 # --- Settings ---
-from src.api.settings_routes import register_settings_routes  # noqa: E402
+from src.api.settings_routes import (  # noqa: F401, E402
+    register_settings_routes, _baostock_supported, _baostock_installed, _load_llm_providers,
+)
 register_settings_routes(app)
 
-from src.api.settings_routes import (  # noqa: F401, E402
-    _baostock_supported,
-    _baostock_installed,
-    _load_llm_providers,
-)
-
 # --- Uploads ---
-from src.api.uploads_routes import register_uploads_routes  # noqa: E402
-register_uploads_routes(app)
-
 from src.api.uploads_routes import (  # noqa: F401, E402
-    MAX_UPLOAD_SIZE,
-    _BLOCKED_UPLOAD_EXT,
-    _BLOCKED_UPLOAD_NAMES,
-    _SHADOW_ID_RE,
-    _UPLOAD_CHUNK_SIZE,
+    register_uploads_routes, MAX_UPLOAD_SIZE, _BLOCKED_UPLOAD_EXT,
+    _BLOCKED_UPLOAD_NAMES, _SHADOW_ID_RE, _UPLOAD_CHUNK_SIZE,
 )
+register_uploads_routes(app)
 
 # --- Channels ---
 from src.api.channels_routes import register_channels_routes  # noqa: E402
